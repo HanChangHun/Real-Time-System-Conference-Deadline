@@ -103,7 +103,7 @@
 
     .row {
       display: grid;
-      grid-template-columns: 130px 1fr 220px 200px;
+      grid-template-columns: minmax(220px, 1fr) 260px 200px;
       gap: 1rem;
       padding: 1.1rem 1.3rem;
       border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -143,19 +143,21 @@
       color: rgba(255,255,255,0.45);
     }
 
-    .event-name {
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-
     .event-dates {
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.85);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.9);
     }
     .event-local {
       font-size: 0.72rem;
       color: rgba(255,255,255,0.45);
+      margin-top: 0.25rem;
+    }
+    .event-note {
+      font-size: 0.68rem;
+      color: #8eb8ff;
       margin-top: 0.2rem;
+      letter-spacing: 0.3px;
     }
 
     .countdown {
@@ -177,6 +179,8 @@
     .later .cd-main { color: #C6FFDD; }
     .passed .cd-main { color: rgba(255,255,255,0.35); }
 
+    .row.is-estimated .event-dates { color: #8eb8ff; }
+
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 
     .tag {
@@ -193,13 +197,19 @@
     .tag.passed { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); }
 
     footer {
+      max-width: 720px;
+      margin: 2rem auto 0;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.65;
       text-align: center;
-      margin-top: 2rem;
-      font-size: 0.72rem;
-      color: rgba(255,255,255,0.4);
-      line-height: 1.7;
     }
-    footer a { color: rgba(255,255,255,0.55); }
+    footer p { margin: 0.35rem 0; }
+    footer .copy {
+      margin-top: 0.9rem;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.35);
+    }
 
     @media (max-width: 800px) {
       .row {
@@ -228,14 +238,15 @@
     <div class="table" id="table">
       <div class="row header">
         <div>Conference</div>
-        <div>Event</div>
         <div>Deadline</div>
         <div style="text-align:right">Countdown</div>
       </div>
     </div>
 
     <footer>
-      &copy; 2026 HanChangHun &middot; MIT License
+      <p>Deadlines shown are for full paper submission. Abstract registration is typically due up to a week earlier.</p>
+      <p>Entries shown in blue are estimated from the previous year&rsquo;s schedule and will be updated when each CFP is announced.</p>
+      <p class="copy">&copy; 2026 HanChangHun &middot; MIT License</p>
     </footer>
   </div>
 
@@ -336,12 +347,10 @@
       for (const item of items) {
         const cls = classify(item.diff);
         const row = document.createElement('div');
-        row.className = `row ${cls}`;
+        row.className = `row ${cls}${item.estimated ? ' is-estimated' : ''}`;
         row.dataset.when = item.when;
 
-        const tags = [];
-        if (item.estimated) tags.push('<span class="tag estimated">예정</span>');
-        if (cls === 'passed') tags.push('<span class="tag passed">past</span>');
+        const datePrefix = item.estimated ? '~ ' : '';
 
         row.innerHTML = `
           <div class="conf">
@@ -349,11 +358,9 @@
             <div class="conf-meta">${item.confDates}</div>
           </div>
           <div>
-            <div class="event-name">${item.event}${tags.join('')}</div>
-          </div>
-          <div>
-            <div class="event-dates">${item.dateStr}</div>
+            <div class="event-dates">${datePrefix}${item.dateStr}</div>
             ${item.showLocal ? `<div class="event-local">${kstStr(item.when)}</div>` : ''}
+            ${item.estimated ? `<div class="event-note">est. from previous year</div>` : ''}
           </div>
           <div class="countdown">${fmtCountdown(item.diff)}</div>
         `;
