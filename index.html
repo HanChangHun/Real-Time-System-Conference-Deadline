@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1545">
+  <title>Real-Time System Conference Deadlines</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      min-height: 100%;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    body {
+      background: #0f0c29;
+      color: #fff;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      font-variant-numeric: tabular-nums;
+      padding: clamp(1rem, 3vw, 2.5rem) clamp(0.75rem, 3vw, 2rem) 3rem;
+    }
+
+    .bg {
+      position: fixed; inset: 0;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      z-index: -2;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: clamp(1.5rem, 4vh, 2.5rem);
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.75rem;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      backdrop-filter: blur(10px);
+    }
+    h1 {
+      font-size: clamp(1.8rem, 4.5vw, 3.2rem);
+      font-weight: 700;
+      background: linear-gradient(to right, #f7797d, #FBD786, #C6FFDD);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4rem;
+    }
+    .subtitle {
+      color: rgba(255,255,255,0.55);
+      font-size: clamp(0.85rem, 1.4vw, 1rem);
+    }
+    .now {
+      color: rgba(255,255,255,0.4);
+      font-size: 0.8rem;
+      margin-top: 0.4rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .chip {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 999px;
+      padding: 0.45rem 1rem;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .chip:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .chip.active {
+      background: linear-gradient(135deg, #f7797d, #FBD786);
+      color: #1a1545;
+      border-color: transparent;
+      font-weight: 600;
+    }
+
+    .table {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 130px 1fr 220px 200px;
+      gap: 1rem;
+      padding: 1.1rem 1.3rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      align-items: center;
+      transition: background 0.2s;
+    }
+    .row:last-child { border-bottom: none; }
+    .row:hover { background: rgba(255,255,255,0.03); }
+
+    .row.header {
+      background: rgba(255,255,255,0.04);
+      font-size: 0.7rem;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      padding: 0.75rem 1.3rem;
+    }
+
+    .conf {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .conf-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.3px;
+    }
+    .conf-name a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dotted rgba(255,255,255,0.3);
+    }
+    .conf-name a:hover { border-bottom-color: #FBD786; }
+    .conf-meta {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .event-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .event-dates {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.85);
+    }
+    .event-local {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.45);
+      margin-top: 0.2rem;
+    }
+
+    .countdown {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .cd-main {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+    .cd-sub {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 0.15rem;
+    }
+
+    .urgent .cd-main { color: #f7797d; animation: pulse 2s infinite; }
+    .soon .cd-main { color: #FBD786; }
+    .later .cd-main { color: #C6FFDD; }
+    .passed .cd-main { color: rgba(255,255,255,0.35); }
+
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.62rem;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 0.4rem;
+      vertical-align: middle;
+    }
+    .tag.estimated { background: rgba(142,184,255,0.18); color: #8eb8ff; }
+    .tag.passed { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.4);
+      line-height: 1.7;
+    }
+    footer a { color: rgba(255,255,255,0.55); }
+
+    @media (max-width: 800px) {
+      .row {
+        grid-template-columns: 1fr;
+        gap: 0.4rem;
+      }
+      .row.header { display: none; }
+      .conf { flex-direction: row; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+      .conf-meta { font-size: 0.7rem; }
+      .countdown { text-align: left; }
+      .row { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+
+  <div class="wrap">
+    <header>
+      <div class="badge">Paper Submission Deadlines</div>
+      <h1>Real-Time System Conference Deadlines</h1>
+      <p class="subtitle">Upcoming full paper submission deadlines · RTSS, RTAS, DAC</p>
+      <p class="now" id="now"></p>
+    </header>
+
+    <div class="table" id="table">
+      <div class="row header">
+        <div>Conference</div>
+        <div>Event</div>
+        <div>Deadline</div>
+        <div style="text-align:right">Countdown</div>
+      </div>
+    </div>
+
+    <footer>
+      &copy; 2026 HanChangHun &middot; MIT License
+    </footer>
+  </div>
+
+  <script>
+    // ---- Time helpers ----
+    // AoE (Anywhere on Earth) = UTC-12. "Date X AoE" deadline = end of X in UTC-12
+    // = X+1 11:59:59.999 UTC.
+    const aoe = (yyyymmdd) => {
+      const [y,m,d] = yyyymmdd.split('-').map(Number);
+      return Date.UTC(y, m-1, d+1, 11, 59, 59, 999);
+    };
+    // PST = UTC-8 (November is standard time, not DST).
+    // 5 PM PST on date X = X 01:00 UTC on day X+1... wait: 17:00 PST = 17:00 + 8 = 25:00 UTC = next day 01:00 UTC.
+    const pst5pm = (yyyymmdd) => {
+      const [y,m,d] = yyyymmdd.split('-').map(Number);
+      return Date.UTC(y, m-1, d+1, 1, 0, 0, 0);
+    };
+
+    const DEADLINES = [
+      {
+        conf: 'RTSS', year: '2026',
+        confUrl: 'https://2026.rtss.org/',
+        confDates: 'Dec 9–11, 2026 · Yokohama, Japan',
+        event: 'Full Paper Submission',
+        when: aoe('2026-05-26'),
+        dateStr: 'May 26, 2026 (AoE)',
+        showLocal: true,
+      },
+      {
+        conf: 'RTAS', year: '2027',
+        confUrl: 'https://2026.rtas.org/',
+        confDates: 'May 2027 · TBA',
+        event: 'Full Paper Submission',
+        when: aoe('2026-11-13'),
+        dateStr: 'Nov 13, 2026 (AoE)',
+        showLocal: true,
+        estimated: true,
+      },
+      {
+        conf: 'DAC', year: '2027',
+        confUrl: 'https://dac.com/2026/events/dac-2027',
+        confDates: 'Jul 10–16, 2027 · San Jose, CA',
+        event: 'Full Paper Submission',
+        when: pst5pm('2026-11-19'),
+        dateStr: 'Nov 19, 2026 17:00 PST',
+        showLocal: true,
+        estimated: true,
+      },
+    ];
+
+    const pad = (n) => String(n).padStart(2,'0');
+
+    function classify(diff) {
+      if (diff <= 0) return 'passed';
+      const days = diff / (1000*60*60*24);
+      if (days < 7) return 'urgent';
+      if (days < 30) return 'soon';
+      if (days < 120) return 'later';
+      return '';
+    }
+
+    function fmtCountdown(diff) {
+      if (diff <= 0) return '<div class="cd-main">passed</div>';
+      const d = Math.floor(diff / (1000*60*60*24));
+      const h = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+      const m = Math.floor((diff % (1000*60*60)) / (1000*60));
+      const s = Math.floor((diff % (1000*60)) / 1000);
+      if (d > 0) {
+        return `<div class="cd-main">${d}d ${pad(h)}h ${pad(m)}m</div><div class="cd-sub">${pad(s)}s</div>`;
+      }
+      return `<div class="cd-main">${pad(h)}:${pad(m)}:${pad(s)}</div><div class="cd-sub">today</div>`;
+    }
+
+    function kstStr(when) {
+      const kst = new Date(when + 9*3600*1000);
+      const yy = kst.getUTCFullYear();
+      const mm = pad(kst.getUTCMonth()+1);
+      const dd = pad(kst.getUTCDate());
+      const hh = pad(kst.getUTCHours());
+      const mi = pad(kst.getUTCMinutes());
+      return `KST: ${yy}-${mm}-${dd} ${hh}:${mi}`;
+    }
+
+    function render() {
+      const table = document.getElementById('table');
+      [...table.querySelectorAll('.row:not(.header)')].forEach(r => r.remove());
+
+      const now = Date.now();
+      const items = DEADLINES
+        .map(d => ({ ...d, diff: d.when - now }))
+        .sort((a,b) => {
+          const aPast = a.diff <= 0;
+          const bPast = b.diff <= 0;
+          if (aPast !== bPast) return aPast ? 1 : -1;
+          return a.when - b.when;
+        });
+
+      for (const item of items) {
+        const cls = classify(item.diff);
+        const row = document.createElement('div');
+        row.className = `row ${cls}`;
+        row.dataset.when = item.when;
+
+        const tags = [];
+        if (item.estimated) tags.push('<span class="tag estimated">예정</span>');
+        if (cls === 'passed') tags.push('<span class="tag passed">past</span>');
+
+        row.innerHTML = `
+          <div class="conf">
+            <div class="conf-name"><a href="${item.confUrl}" target="_blank" rel="noopener">${item.conf} ${item.year}</a></div>
+            <div class="conf-meta">${item.confDates}</div>
+          </div>
+          <div>
+            <div class="event-name">${item.event}${tags.join('')}</div>
+          </div>
+          <div>
+            <div class="event-dates">${item.dateStr}</div>
+            ${item.showLocal ? `<div class="event-local">${kstStr(item.when)}</div>` : ''}
+          </div>
+          <div class="countdown">${fmtCountdown(item.diff)}</div>
+        `;
+        table.appendChild(row);
+      }
+    }
+
+    function tick() {
+      const now = Date.now();
+      document.querySelectorAll('.row:not(.header)').forEach(row => {
+        const when = Number(row.dataset.when);
+        const diff = when - now;
+        const cdEl = row.querySelector('.countdown');
+        cdEl.innerHTML = fmtCountdown(diff);
+        const cls = classify(diff);
+        row.classList.remove('urgent','soon','later','passed');
+        if (cls) row.classList.add(cls);
+      });
+      requestAnimationFrame(tick);
+    }
+
+    function updateNow() {
+      const fmt = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+      });
+      document.getElementById('now').textContent = `Now (KST): ${fmt.format(new Date())}`;
+    }
+
+    updateNow();
+    setInterval(updateNow, 1000);
+    render();
+    tick();
+  </script>
+</body>
+</html>
