@@ -315,7 +315,7 @@
       const m = Math.floor((diff % (1000*60*60)) / (1000*60));
       const s = Math.floor((diff % (1000*60)) / 1000);
       if (d > 0) {
-        return `<div class="cd-main">${d}d ${pad(h)}h ${pad(m)}m</div><div class="cd-sub">${pad(s)}s</div>`;
+        return `<div class="cd-main">${d}d ${pad(h)}h ${pad(m)}m ${pad(s)}s</div>`;
       }
       return `<div class="cd-main">${pad(h)}:${pad(m)}:${pad(s)}</div><div class="cd-sub">today</div>`;
     }
