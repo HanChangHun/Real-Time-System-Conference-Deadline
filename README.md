@@ -3,7 +3,8 @@
 Live countdown to upcoming full-paper submission deadlines for real-time and
 hardware-systems conferences (RTSS, RTAS, DAC).
 
-Single static `index.html` — open in a browser, or visit the deployed page.
+Single static `index.html` — open in a browser, or visit the deployed page:
+<https://hanchanghun.github.io/Real-Time-System-Conference-Deadline/>.
 
 ## Tracked conferences
 
